@@ -1,0 +1,129 @@
+
+import pandas as pd
+import numpy as np
+import os
+import glob
+def load_rl_data(features_path, macro_path):
+
+    feature_files = glob.glob(os.path.join(features_path, "*.csv"))
+
+    all_features = []
+    all_prices = []
+
+    for file in feature_files:
+        filename = os.path.basename(file).replace(".csv", "")
+        ticker = filename.replace("_features", "")
+
+        df_feat = pd.read_csv(file, index_col=0, parse_dates=True)
+
+        project_root = os.path.abspath(
+            os.path.join(features_path, "..", "..")
+        )
+
+        raw_path = os.path.join(
+            project_root,
+            "data",
+            "raw",
+            "csv_ohlcv",
+            f"{ticker}.csv"
+        )
+
+        if os.path.exists(raw_path):
+            df_raw = pd.read_csv(raw_path, index_col='Date', parse_dates=True)
+
+            all_prices.append(df_raw['Close'].rename(ticker))
+
+            df_feat.columns = [f"{ticker}_{col}" for col in df_feat.columns]
+            all_features.append(df_feat)
+
+    if not all_features or not all_prices:
+        raise ValueError("Falha crítica: Nenhuma combinação de Feature + Preço foi encontrada.")
+
+    
+    df_features = pd.concat(all_features, axis=1, sort=False)
+    df_prices   = pd.concat(all_prices, axis=1, sort=False)
+    df_macro    = pd.read_csv(macro_path, index_col=0, parse_dates=True)
+
+
+    df_features = df_features.sort_index()
+    df_prices   = df_prices.sort_index()
+    df_macro    = df_macro.sort_index()
+
+ 
+    base_index = df_prices.index
+
+    df_features = df_features.reindex(base_index)
+    df_macro    = df_macro.reindex(base_index)
+
+    df_features = df_features.ffill()
+    df_macro    = df_macro.ffill()
+    df_prices   = df_prices.ffill()
+
+  
+    df_prices = df_prices.dropna(how="all")
+
+    valid_index = df_prices.index
+
+    df_features = df_features.loc[valid_index]
+    df_macro    = df_macro.loc[valid_index]
+
+    return df_features, df_macro, df_prices
+
+def temporal_split(df_features, df_macro, df_prices, split_date):
+
+    split_date = pd.to_datetime(split_date)
+
+    df_feat_train = df_features.loc[df_features.index < split_date]
+    df_feat_val   = df_features.loc[df_features.index >= split_date]
+
+    df_macro_train = df_macro.loc[df_macro.index < split_date]
+    df_macro_val   = df_macro.loc[df_macro.index >= split_date]
+
+    df_prices_train = df_prices.loc[df_prices.index < split_date]
+    df_prices_val   = df_prices.loc[df_prices.index >= split_date]
+
+    return (
+        df_feat_train, df_macro_train, df_prices_train,
+        df_feat_val, df_macro_val, df_prices_val
+    )
+
+if __name__ == "__main__":
+    
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    
+    project_root = os.path.abspath(os.path.join(base_path, "..", ".."))
+    feat_p = os.path.join(project_root, "data", "processado_features")
+    macro_p = os.path.join(project_root, "data", "external", "context.csv")
+    
+    try:
+        
+        df_features, df_macro, df_prices = load_rl_data(feat_p, macro_p)
+        split_date = "2018-01-01"
+
+        print("MIN:", df_features.index.min())
+        print("MAX:", df_features.index.max())
+        print("Split:", pd.to_datetime(split_date))
+
+        print(type(df_features.index))
+        print(df_features.index.dtype)
+        print(type(df_features.index[0]))
+       
+        output_path = os.path.join(base_path, "..","..", "data", "processed")
+        (
+            df_feat_train, df_macro_train, df_prices_train,
+            df_feat_val, df_macro_val, df_prices_val
+        ) = temporal_split(df_features, df_macro, df_prices, split_date)
+
+        df_feat_train.to_csv(os.path.join(output_path,"master_features_train.csv"))
+        df_macro_train.to_csv(os.path.join(output_path, "master_macro_train.csv"))
+        df_prices_train.to_csv(os.path.join(output_path, "master_prices_train.csv"))
+
+        df_feat_val.to_csv(os.path.join(output_path, "master_features_val.csv"))
+        df_macro_val.to_csv(os.path.join(output_path, "master_macro_val.csv"))
+        df_prices_val.to_csv(os.path.join(output_path, "master_prices_val.csv"))
+        
+        print("--- SUCESSO ---")
+        print(f"Arquivos salvos em: {os.path.abspath(output_path)}")
+    except Exception as e:
+        print(f"--- ERRO CRÍTICO ---")
+        print(e)
