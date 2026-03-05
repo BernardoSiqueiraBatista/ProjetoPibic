@@ -13,19 +13,15 @@ def train():
 
     base_path = os.path.dirname(os.path.abspath(__file__))
 
-    features_path = os.path.join(base_path, "..", "data", "processed", "master_features_train.csv")
-    macro_path    = os.path.join(base_path, "..", "data", "processed", "master_macro_train.csv")
-    prices_path   = os.path.join(base_path, "..", "data", "processed","master_prices_train.csv")
+    features_path = os.path.join(base_path, "..", "data", "processed","data_train_val", "master_features_train.csv")
+    macro_path    = os.path.join(base_path, "..", "data", "processed", "data_train_val", "master_macro_train.csv")
+    prices_path   = os.path.join(base_path, "..", "data", "processed","data_train_val", "master_prices_train.csv")
 
     print("Carregando dados...")
 
     df_features = pd.read_csv(features_path, index_col=0, parse_dates=True)
     df_macro    = pd.read_csv(macro_path, index_col=0, parse_dates=True)
     df_prices   = pd.read_csv(prices_path, index_col=0, parse_dates=True)
-
-    print(f"Ativos: {len(df_prices.columns)}")
-    print(f"Features técnicas: {df_features.shape[1]}")
-    print(f"Macro features: {df_macro.shape[1]}")
 
     env = PortfolioEnv(df_features, df_macro, df_prices)
     env = DummyVecEnv([lambda: env])
@@ -65,6 +61,7 @@ def train():
 
     model.save("ddpg_portfolio_final")
     print("Treinamento concluído!")
+   
     
 
 if __name__ == "__main__":

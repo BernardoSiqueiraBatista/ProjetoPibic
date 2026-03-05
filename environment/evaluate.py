@@ -157,9 +157,9 @@ def main():
     # ====== USAR VALIDAÇÃO ======
     print("\n===== AVALIAÇÃO EM VALIDAÇÃO (_val) =====")
 
-    feat_path = os.path.join(base_path, "..", "data", "processed","master_features_val.csv")
-    macro_path = os.path.join(base_path, "..", "data", "processed", "master_macro_val.csv")
-    prices_path = os.path.join(base_path, "..", "data", "processed", "master_prices_val.csv")
+    feat_path = os.path.join(base_path, "..", "data", "processed", "data_train_val", "master_features_val.csv")
+    macro_path = os.path.join(base_path, "..", "data", "processed", "data_train_val", "master_macro_val.csv")
+    prices_path = os.path.join(base_path, "..", "data", "processed", "data_train_val", "master_prices_val.csv")
     model_path = os.path.join(base_path, "..", "ddpg_portfolio_final.zip")
 
     # ====== CARREGAR DADOS ======

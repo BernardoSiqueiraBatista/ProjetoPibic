@@ -9,10 +9,11 @@ def load_rl_data(features_path, macro_path):
 
     all_features = []
     all_prices = []
-
     for file in feature_files:
-        filename = os.path.basename(file).replace(".csv", "")
-        ticker = filename.replace("_features", "")
+        # 1. Ajuste do Nome do Ticker:
+        # Se o arquivo é "ABEV3.SA_cleaned.csv_features.csv"
+        filename = os.path.basename(file)
+        ticker = filename.split('_cleaned')[0] # Extrai apenas "ABEV3.SA"
 
         df_feat = pd.read_csv(file, index_col=0, parse_dates=True)
 
@@ -20,21 +21,25 @@ def load_rl_data(features_path, macro_path):
             os.path.join(features_path, "..", "..")
         )
 
+       
         raw_path = os.path.join(
             project_root,
             "data",
-            "raw",
-            "csv_ohlcv",
-            f"{ticker}.csv"
+            "processed",
+            "data_cleaned",  
+            f"{ticker}_cleaned.csv" 
         )
 
         if os.path.exists(raw_path):
             df_raw = pd.read_csv(raw_path, index_col='Date', parse_dates=True)
 
+           
             all_prices.append(df_raw['Close'].rename(ticker))
 
             df_feat.columns = [f"{ticker}_{col}" for col in df_feat.columns]
             all_features.append(df_feat)
+        else:
+            print(f"Aviso: Preços não encontrados para {ticker} em {raw_path}")
 
     if not all_features or not all_prices:
         raise ValueError("Falha crítica: Nenhuma combinação de Feature + Preço foi encontrada.")
@@ -50,10 +55,14 @@ def load_rl_data(features_path, macro_path):
     df_macro    = df_macro.sort_index()
 
  
-    base_index = df_prices.index
+    # alinhar preços e features
+    common_index = df_prices.index.intersection(df_features.index)
 
-    df_features = df_features.reindex(base_index)
-    df_macro    = df_macro.reindex(base_index)
+    df_prices   = df_prices.loc[common_index]
+    df_features = df_features.loc[common_index]
+
+    # alinhar macro usando reindex + forward fill
+    df_macro = df_macro.reindex(common_index).ffill()
 
     df_features = df_features.ffill()
     df_macro    = df_macro.ffill()
@@ -66,6 +75,32 @@ def load_rl_data(features_path, macro_path):
 
     df_features = df_features.loc[valid_index]
     df_macro    = df_macro.loc[valid_index]
+    
+    nan_per_col = df_features.isna().sum()
+    tickers_with_nan = set()
+
+    for col, n_nan in nan_per_col.items():
+        if n_nan > 0:
+            ticker = col.split('_F_')[0]
+            tickers_with_nan.add(ticker)
+
+    print("Ativos com NaN:")
+    print(tickers_with_nan)
+
+    print("Total NaN:", df_features.isna().sum().sum())
+
+    tickers_to_remove = list(tickers_with_nan)
+
+    print("Removendo ativos:", tickers_to_remove)
+
+    cols_to_drop = [
+        col for col in df_features.columns
+        if col.split('_F_')[0] in tickers_to_remove
+    ]
+
+    df_features = df_features.drop(columns=cols_to_drop)
+
+    df_prices = df_prices.drop(columns=tickers_to_remove, errors="ignore")
 
     return df_features, df_macro, df_prices
 
@@ -108,7 +143,7 @@ if __name__ == "__main__":
         print(df_features.index.dtype)
         print(type(df_features.index[0]))
        
-        output_path = os.path.join(base_path, "..","..", "data", "processed")
+        output_path = os.path.join(base_path, "..","..", "data", "processed", "data_train_val")
         (
             df_feat_train, df_macro_train, df_prices_train,
             df_feat_val, df_macro_val, df_prices_val

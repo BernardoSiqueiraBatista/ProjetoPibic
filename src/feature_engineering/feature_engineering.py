@@ -71,6 +71,8 @@ for f in files:
 
         df_final = normalize_features(df_final)
 
+        df_final = df_final.dropna()
+
         save_path = os.path.join(output_dir, f"{ticker}_features.csv")
         df_final.to_csv(save_path)
         print("OK!")
