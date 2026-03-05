@@ -9,9 +9,6 @@ class PortfolioEnv(gym.Env):
     def __init__(self, df_features, df_macro, df_prices):
         super(PortfolioEnv, self).__init__()
 
-        if len(df_features) <= 30:
-            raise ValueError("Dataset muito pequeno. Precisa de mais de 30 linhas para calcular retorno acumulado.")
-
         self.df_features = df_features
         self.df_macro = df_macro
         self.prices = df_prices
@@ -59,6 +56,15 @@ class PortfolioEnv(gym.Env):
         rt = self.calculate_recent_returns(t)
 
         state = np.concatenate([ft, wt, ct, rt])
+
+        if np.isnan(ft).any():
+            print("NaN nas FEATURES")
+
+        if np.isnan(ct).any():
+            print("NaN nas MACRO")
+
+        if np.isnan(rt).any():
+            print("NaN nos RETURNS")
         return state.astype(np.float32)
 
 
@@ -80,7 +86,8 @@ class PortfolioEnv(gym.Env):
         price_today = self.prices.iloc[self.current_step].values
         price_tomorrow = self.prices.iloc[self.current_step + 1].values
 
-        asset_returns = (price_tomorrow / price_today) - 1
+        asset_returns = (price_tomorrow / (price_today + 1e-8)) - 1
+        asset_returns = np.nan_to_num(asset_returns, nan=0.0, posinf=0.0, neginf=0.0)
 
         portfolio_return = np.dot(new_weights, asset_returns)
 
@@ -103,11 +110,9 @@ class PortfolioEnv(gym.Env):
             sharpe = 0.0
             volatility = 0.0
 
-        reward = (
-            0.6 * ret +
-            0.3 * sharpe -
-            0.1 * volatility
-        )
+        #quero uma função reward que seja o np.logs de retorno, depois alterar isso aqui para combinar com a metolodiga
+        ret = np.nan_to_num(ret, nan=0.0, posinf=0.0, neginf=0.0)
+        reward = (np.log(1 + ret)*100) if ret > -1 else -1
 
         self.weights = new_weights
 
@@ -121,6 +126,15 @@ class PortfolioEnv(gym.Env):
         truncated = False
 
         obs = self._get_observation()
+
+        if np.isnan(obs).any():
+            print("OBS NaN")
+
+        if np.isnan(reward):
+            print("REWARD NaN")
+
+        #if np.isnan(self.portfolio_value):
+        #   print("PORTFOLIO NaN")
 
         return obs, reward, terminated, truncated, {
             "portfolio_return": portfolio_return
