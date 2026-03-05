@@ -1,13 +1,39 @@
 import pandas as pd
+
 import pandas_ta as ta
+
 import os
+
 import glob
+
+
+def normalize_features(df, window=252):
+    """
+    Normaliza features usando rolling z-score.
+    Ideal para RL financeiro (evita data leakage).
+    """
+
+    feature_cols = [
+        'F_trend_sma',
+        'F_momentum_rsi',
+        'F_volat_bb',
+        'F_volume_obv'
+    ]
+
+    for col in feature_cols:
+
+        rolling_mean = df[col].rolling(window=window, min_periods=window//2).mean()
+        rolling_std = df[col].rolling(window=window, min_periods=window//2).std()
+
+        df[col] = (df[col] - rolling_mean) / (rolling_std + 1e-8)
+
+    return df
 
 base_path = os.path.dirname(os.path.abspath(__file__))
 
 project_root = os.path.abspath(os.path.join(base_path, "..", ".."))
 
-input_dir = os.path.join(project_root, "data", "raw", "csv_ohlcv")
+input_dir = os.path.join(project_root, "data", "processed", "data_cleaned")
 output_dir = os.path.join(project_root, "data", "processado_features")
 
 print(f"Lendo de: {input_dir}")
@@ -31,7 +57,6 @@ for f in files:
             print("PULADO (muito curto)")
             continue
             
-        # Features
         df['sma_20'] = ta.sma(df['Close'], length=20)
         df['F_trend_sma'] = (df['Close'] / df['sma_20']) - 1
         df['F_momentum_rsi'] = ta.rsi(df['Close'], length=14) / 100
@@ -41,8 +66,11 @@ for f in files:
         df['F_volume_obv'] = df['obv'].pct_change()
 
         features_cols = [c for c in df.columns if c.startswith('F_')]
+
         df_final = df[features_cols].dropna()
-        
+
+        df_final = normalize_features(df_final)
+
         save_path = os.path.join(output_dir, f"{ticker}_features.csv")
         df_final.to_csv(save_path)
         print("OK!")
