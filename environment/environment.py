@@ -112,7 +112,7 @@ class PortfolioEnv(gym.Env):
 
         #quero uma função reward que seja o np.logs de retorno, depois alterar isso aqui para combinar com a metolodiga
         ret = np.nan_to_num(ret, nan=0.0, posinf=0.0, neginf=0.0)
-        reward = (np.log(1 + ret)*100) if ret > -1 else -1
+        reward =  np.log(1 + portfolio_return)
 
         self.weights = new_weights
 
@@ -149,8 +149,6 @@ class PortfolioEnv(gym.Env):
         self.weights = np.ones(self.n_assets) / self.n_assets
 
         self.portfolio_returns_history = []
-
-        self.action_history = []
 
         obs = self._get_observation()
         return obs, {}
