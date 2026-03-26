@@ -10,10 +10,10 @@ def load_rl_data(features_path, macro_path):
     all_features = []
     all_prices = []
     for file in feature_files:
-        # 1. Ajuste do Nome do Ticker:
-        # Se o arquivo é "ABEV3.SA_cleaned.csv_features.csv"
+        #Ajuste do Nome do Ticker:
+      
         filename = os.path.basename(file)
-        ticker = filename.split('_cleaned')[0] # Extrai apenas "ABEV3.SA"
+        ticker = filename.split('_cleaned')[0] 
 
         df_feat = pd.read_csv(file, index_col=0, parse_dates=True)
 
@@ -75,7 +75,7 @@ def load_rl_data(features_path, macro_path):
 
     df_features = df_features.loc[valid_index]
     df_macro    = df_macro.loc[valid_index]
-    
+
     nan_per_col = df_features.isna().sum()
     tickers_with_nan = set()
 
