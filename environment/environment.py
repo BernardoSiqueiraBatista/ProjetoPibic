@@ -6,12 +6,13 @@ import pandas as pd
 
 class PortfolioEnv(gym.Env):
 
-    def __init__(self, df_features, df_macro, df_prices):
+    def __init__(self, df_features, df_macro, df_prices, use_context=False):
         super(PortfolioEnv, self).__init__()
 
         self.df_features = df_features
         self.df_macro = df_macro
         self.prices = df_prices
+        self.use_context = use_context
         self.tickers = df_prices.columns.tolist()
         self.action_history = []
 
@@ -20,12 +21,19 @@ class PortfolioEnv(gym.Env):
         self.n_feature_cols = len(df_features.columns)
         self.n_macro_cols = len(df_macro.columns)
 
-        total_size = (
-            self.n_feature_cols +
-            self.n_assets +
-            self.n_macro_cols +
-            self.n_assets
-        )
+        if use_context:
+            total_size = (
+                self.n_feature_cols +
+                self.n_assets +
+                self.n_macro_cols +
+                self.n_assets
+            )
+        else:
+            total_size = (
+                self.n_feature_cols +
+                self.n_assets +
+                self.n_assets
+            )
 
         self.observation_space = spaces.Box(
             low=-np.inf,
@@ -52,16 +60,19 @@ class PortfolioEnv(gym.Env):
 
         ft = self.df_features.iloc[t].values
         wt = self.weights
-        ct = self.df_macro.iloc[t].values
         rt = self.calculate_recent_returns(t)
-
-        state = np.concatenate([ft, wt, ct, rt])
+        
+        if self.use_context:
+            ct = self.df_macro.iloc[t].values
+            state = np.concatenate([ft, wt, ct, rt])
+        else:
+            state = np.concatenate([ft, wt, rt])
 
         if np.isnan(ft).any():
             print("NaN nas FEATURES")
-
-        if np.isnan(ct).any():
-            print("NaN nas MACRO")
+        if self.use_context:
+            if np.isnan(ct).any():
+                print("NaN nas MACRO")
 
         if np.isnan(rt).any():
             print("NaN nos RETURNS")
