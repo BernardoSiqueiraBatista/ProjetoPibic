@@ -6,7 +6,7 @@ import pandas as pd
 
 class PortfolioEnv(gym.Env):
 
-    def __init__(self, df_features, df_macro, df_prices, use_context=False):
+    def __init__(self, df_features, df_macro, df_prices, use_context=True):
         super(PortfolioEnv, self).__init__()
 
         self.df_features = df_features
@@ -112,10 +112,13 @@ class PortfolioEnv(gym.Env):
         window = 30
         recent_returns = returns_array[-window:]
 
+        #Agora eu vi que a sharpe ratio tem sido só o calculo das medias do retorno pelo desvio padrão, ajeitar isso depois...
+        #
         if len(recent_returns) > 1:
             mean_ret = recent_returns.mean()
             std_ret = recent_returns.std() + 1e-8
-            sharpe = mean_ret / std_ret
+            risk_free_daily = 0.08 / 252
+            sharpe = np.sqrt(252) * (mean_ret- risk_free_daily) / (std_ret + 1e-8)
             volatility = std_ret
         else:
             sharpe = 0.0
@@ -123,7 +126,18 @@ class PortfolioEnv(gym.Env):
 
         #quero uma função reward que seja o np.logs de retorno, depois alterar isso aqui para combinar com a metolodiga
         ret = np.nan_to_num(ret, nan=0.0, posinf=0.0, neginf=0.0)
-        reward =  np.log(1 + portfolio_return)
+
+        
+        #Testando essa função de recompensa que combina retorno, sharpe e volatilidade. A ideia é incentivar o agente a buscar retornos positivos, mas também a manter um perfil de risco controlado (sharpe alto e volatilidade baixa).
+        #0.6 · return + 0.3 · Sharpe − 0.1 · volatility − 0.05 · transaction cost
+        #Podemos passar uma proxy para o trnsaction cost, como a variação total dos pesos (quanto mais o agente muda a alocação, maior o custo).
+
+        transaction_cost = np.sum(np.abs(new_weights - self.weights))
+
+        #Problema : diferentes escalas...
+
+        reward = np.log(1+ret)
+
 
         self.weights = new_weights
 

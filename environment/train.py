@@ -15,11 +15,13 @@ import torch as th
 
 policy_kwargs_ppo = dict(
     activation_fn=th.nn.ReLU,
+
     net_arch=dict(
             
         pi=[256, 256, 128], 
 
         vf=[256, 128]
+
     )
 )
 
@@ -34,12 +36,15 @@ policy_kwargs_sac = dict(
 policy_kwargs_ddpg = dict(
     activation_fn=th.nn.ReLU,
     net_arch=dict(
+
         pi=[256, 256, 128],
+
         qf=[256, 128]
     )
+
 )
 
-use_context = False
+use_context = True
 def iniciar_semente(seed=42):
     random.seed(seed)
     np.random.seed(seed)
@@ -123,7 +128,7 @@ def train():
     device="auto",
     policy_kwargs=policy_kwargs_ddpg
 )
-    model_2 = SAC("MlpPolicy", env, seed=minha_seed, learning_rate=1e-4, 
+    """model_2 = SAC("MlpPolicy", env, seed=minha_seed, learning_rate=1e-4, 
                   batch_size=256, buffer_size=100_000, tau = 0.001, gamma=0.99, train_freq=(1, "step"), 
                   gradient_steps=1, verbose=1, device="auto", policy_kwargs=policy_kwargs_sac)
     
@@ -141,7 +146,7 @@ def train():
     verbose=1,
     device="cpu",
     policy_kwargs=policy_kwargs_ppo
-)
+)"""
 
 
     checkpoint_callback = CheckpointCallback(
@@ -149,7 +154,7 @@ def train():
         save_path='./models/',
         name_prefix='ddpg_portfolio_model'
     )
-    checkpoint_callback_2 = CheckpointCallback(
+    """checkpoint_callback_2 = CheckpointCallback(
         save_freq=5000,
         save_path='./models/',
         name_prefix='sac_portfolio_model'
@@ -158,16 +163,16 @@ def train():
         save_freq=5000,
         save_path='./models/',
         name_prefix='ppo_portfolio_model'
-    )
+    )"""
 
     print("Iniciando treinamento...")
     
     model.learn(
-        total_timesteps=100000,
+        total_timesteps=500000,
         callback=checkpoint_callback,
         progress_bar=True
     )
-    model_2.learn(
+    """model_2.learn(
         total_timesteps=100000,
         callback=checkpoint_callback_2,
         progress_bar=True
@@ -177,13 +182,14 @@ def train():
         total_timesteps=300000,
         callback=checkpoint_callback_3,
         progress_bar=True
-    )
+    )"""
 
     
     model.save("ddpg_portfolio_final")
-    model_2.save("sac_portfolio_final")
+    """model_2.save("sac_portfolio_final")
     
     model_3.save("ppo_portfolio_final")
+    """
     env.save("vec_normalize_stats.pkl")
     print("Treinamento concluído!")
    

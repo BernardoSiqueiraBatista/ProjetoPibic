@@ -1,3 +1,9 @@
 .venv/
 .DS_Store
 __pycache__
+ppo_portfolio_final.zip
+sac_portfolio_final.zip
+ddpg_portfolio_final.zip
+vec_normalize_stats.pkl
+checkpoints/
+models/

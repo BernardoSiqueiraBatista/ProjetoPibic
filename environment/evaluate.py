@@ -44,7 +44,9 @@ def compute_metrics(portfolio_values):
     total_return = values.iloc[-1] - 1
     annual_return = (values.iloc[-1]) ** (252 / len(returns)) - 1
     volatility = returns.std() * np.sqrt(252)
-    sharpe = np.sqrt(252) * returns.mean() / (returns.std() + 1e-8)
+    
+    risk_free_daily = 0.08 / 252
+    sharpe = np.sqrt(252) * (returns.mean() - risk_free_daily) / (returns.std() + 1e-8)
 
     rolling_max = values.cummax()
     drawdown = (values - rolling_max) / rolling_max
@@ -62,7 +64,9 @@ def compute_metrics(portfolio_values):
 
 def equal_weight_baseline(prices):
 
-    returns = prices.pct_change().dropna()
+    #alterar codigo para ignorar primeiros 30 dias
+    df_prices = prices.iloc[30:]
+    returns = df_prices.pct_change().dropna()
 
     if len(returns) == 0:
         return pd.Series([1.0])
@@ -256,11 +260,10 @@ def main():
 
 
     rl_values = evaluate_model(model_path, df_features, df_prices,df_macro, SEED)
+
     rl_values_sac = evaluate_model_sac(model_sac, df_features, df_prices,df_macro, SEED)
 
     r_values_ppo = evaluate_model_ppo(model_ppo, df_features, df_prices,df_macro, SEED)
-
-    
 
     eq_values = equal_weight_baseline(df_prices)
 
@@ -281,9 +284,13 @@ def main():
     for name, metrics in {
         "RL (DDPG)": rl_metrics,
         "Equal Weight": eq_metrics,
-        "MVO": mvo_metrics,
-        "RL (SAC)": sac_metrics,
-        "PPO" : ppo_metrics
+        #Ignorar por enquanto
+        #"MVO": mvo_metrics,
+        
+        #Ignorar por enquanto
+
+        #"RL (SAC)": sac_metrics,
+        #"PPO" : ppo_metrics
     }.items():
         print(f"\n--- {name} ---")
         for k, v in metrics.items():
@@ -291,11 +298,13 @@ def main():
 
 
     plt.figure(figsize=(12, 6))
+
     plt.plot(eq_values.values, label="Equal Weight")
-    plt.plot(mvo_values.values, label="MVO")
-    plt.plot(rl_values_sac.values, label="RL (SAC)")
+
+    #plt.plot(mvo_values.values, label="MVO")
+    #plt.plot(rl_values_sac.values, label="RL (SAC)")
     plt.plot(rl_values.values, label="RL (DDPG)")
-    plt.plot(r_values_ppo.values, label="RL (PPO)")
+    #plt.plot(r_values_ppo.values, label="RL (PPO)")
     plt.legend()
     plt.grid()
     plt.title("Equity Curve Comparison (_val)")
