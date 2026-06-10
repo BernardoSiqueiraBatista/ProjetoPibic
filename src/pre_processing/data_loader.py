@@ -104,22 +104,27 @@ def load_rl_data(features_path, macro_path):
 
     return df_features, df_macro, df_prices
 
-def temporal_split(df_features, df_macro, df_prices, split_date):
+def temporal_split(df_features, df_macro, df_prices, split_val_date, split_test_date):
 
-    split_date = pd.to_datetime(split_date)
+    split_val_date  = pd.to_datetime(split_val_date)
+    split_test_date = pd.to_datetime(split_test_date)
 
-    df_feat_train = df_features.loc[df_features.index < split_date]
-    df_feat_val   = df_features.loc[df_features.index >= split_date]
+    df_feat_train = df_features.loc[df_features.index < split_val_date]
+    df_feat_val   = df_features.loc[(df_features.index >= split_val_date) & (df_features.index < split_test_date)]
+    df_feat_test  = df_features.loc[df_features.index >= split_test_date]
 
-    df_macro_train = df_macro.loc[df_macro.index < split_date]
-    df_macro_val   = df_macro.loc[df_macro.index >= split_date]
+    df_macro_train = df_macro.loc[df_macro.index < split_val_date]
+    df_macro_val   = df_macro.loc[(df_macro.index >= split_val_date) & (df_macro.index < split_test_date)]
+    df_macro_test  = df_macro.loc[df_macro.index >= split_test_date]
 
-    df_prices_train = df_prices.loc[df_prices.index < split_date]
-    df_prices_val   = df_prices.loc[df_prices.index >= split_date]
+    df_prices_train = df_prices.loc[df_prices.index < split_val_date]
+    df_prices_val   = df_prices.loc[(df_prices.index >= split_val_date) & (df_prices.index < split_test_date)]
+    df_prices_test  = df_prices.loc[df_prices.index >= split_test_date]
 
     return (
         df_feat_train, df_macro_train, df_prices_train,
-        df_feat_val, df_macro_val, df_prices_val
+        df_feat_val,   df_macro_val,   df_prices_val,
+        df_feat_test,  df_macro_test,  df_prices_test,
     )
 
 if __name__ == "__main__":
@@ -133,29 +138,35 @@ if __name__ == "__main__":
     try:
         
         df_features, df_macro, df_prices = load_rl_data(feat_p, macro_p)
-        split_date = "2018-01-01"
+        split_val_date  = "2016-01-01"
+        split_test_date = "2019-01-01"
 
         print("MIN:", df_features.index.min())
         print("MAX:", df_features.index.max())
-        print("Split:", pd.to_datetime(split_date))
+        print("Val split:", split_val_date, "| Test split:", split_test_date)
 
-        print(type(df_features.index))
-        print(df_features.index.dtype)
-        print(type(df_features.index[0]))
-       
         output_path = os.path.join(base_path, "..","..", "data", "processed", "data_train_val")
         (
-            df_feat_train, df_macro_train, df_prices_train,
-            df_feat_val, df_macro_val, df_prices_val
-        ) = temporal_split(df_features, df_macro, df_prices, split_date)
+            df_feat_train,  df_macro_train,  df_prices_train,
+            df_feat_val,    df_macro_val,    df_prices_val,
+            df_feat_test,   df_macro_test,   df_prices_test,
+        ) = temporal_split(df_features, df_macro, df_prices, split_val_date, split_test_date)
 
-        df_feat_train.to_csv(os.path.join(output_path,"master_features_train.csv"))
+        df_feat_train.to_csv(os.path.join(output_path, "master_features_train.csv"))
         df_macro_train.to_csv(os.path.join(output_path, "master_macro_train.csv"))
         df_prices_train.to_csv(os.path.join(output_path, "master_prices_train.csv"))
 
         df_feat_val.to_csv(os.path.join(output_path, "master_features_val.csv"))
         df_macro_val.to_csv(os.path.join(output_path, "master_macro_val.csv"))
         df_prices_val.to_csv(os.path.join(output_path, "master_prices_val.csv"))
+
+        df_feat_test.to_csv(os.path.join(output_path, "master_features_test.csv"))
+        df_macro_test.to_csv(os.path.join(output_path, "master_macro_test.csv"))
+        df_prices_test.to_csv(os.path.join(output_path, "master_prices_test.csv"))
+
+        print(f"Train: {df_feat_train.index.min().date()} → {df_feat_train.index.max().date()} ({len(df_feat_train)} dias)")
+        print(f"Val:   {df_feat_val.index.min().date()} → {df_feat_val.index.max().date()} ({len(df_feat_val)} dias)")
+        print(f"Test:  {df_feat_test.index.min().date()} → {df_feat_test.index.max().date()} ({len(df_feat_test)} dias)")
         
         print("--- SUCESSO ---")
         print(f"Arquivos salvos em: {os.path.abspath(output_path)}")

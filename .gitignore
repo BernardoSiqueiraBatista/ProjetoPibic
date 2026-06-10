@@ -7,3 +7,5 @@ ddpg_portfolio_final.zip
 vec_normalize_stats.pkl
 checkpoints/
 models/
+metrics/
+
