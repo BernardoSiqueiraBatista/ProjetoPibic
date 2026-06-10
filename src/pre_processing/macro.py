@@ -60,4 +60,7 @@ print("\n--- Shape do Dataset ---")
 print(data.shape)
 print(data.tail())
 
+
+#Criar outro macro que usa
+
 data.to_csv("data/external/context.csv")
