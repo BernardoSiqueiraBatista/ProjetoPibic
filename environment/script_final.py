@@ -508,6 +508,55 @@ def build_callbacks(run_name, reward, step):
     return ckpt_dir, CallbackList([ckpt_cb, reward_logger])
 
 
+TB_DIR = os.path.join(base_path, "..", "tensorboard")   # path, não join
+os.makedirs(TB_DIR, exist_ok=True)                       # makedirs, não mkdir
+
+def train_ddpg():
+    learning_rate = [1e-4, 3e-4]
+    gammas        = [0.95, 0.98, 0.99]
+    reward_type   = ["log-retorno", "huang-return", "sortino", "omega", "calmar"]
+    step_size     = [21, 63]   # step=1 ja foi treinado separadamente
+
+    combos = list(itertools.product(learning_rate, gammas, reward_type, step_size))
+
+    for l, g, r, s in combos:
+        run_name = f"DDPG_r{r}_s{s}_lr{l}_g{g}"
+        print(f"[treino] {run_name}")
+        iniciar_semente(SEED)
+
+        train_env = make_vec_env(df_features, df_macro, df_prices, r, s, eval_mode=False)
+        train_env = VecNormalize(train_env, norm_obs=False, norm_reward=True)
+
+        n_actions = len(df_prices.columns)
+        action_noise = NormalActionNoise(
+            mean=np.zeros(n_actions),
+            sigma=0.1 * np.ones(n_actions),
+        )
+
+        model = DDPG(
+            "MlpPolicy", train_env, seed=SEED,
+            action_noise=action_noise,
+            learning_rate=l, gamma=g,
+            batch_size=256, buffer_size=100_000, tau=0.005,
+            train_freq=(1, "step"), gradient_steps=1,
+            verbose=0, device=DEVICE,
+            policy_kwargs=policy_kwargs_ddpg,
+            tensorboard_log=TB_DIR,
+        )
+
+        ckpt_dir, callbacks = build_callbacks(run_name, r, s)
+
+        model.learn(
+            total_timesteps=TIMESTEPS,
+            callback=callbacks,
+            tb_log_name=run_name,
+            progress_bar=True,
+        )
+
+        model.save(os.path.join(ckpt_dir, "final_model"))
+        train_env.save(os.path.join(ckpt_dir, "vec_normalize.pkl"))
+        print(f"[salvo] {run_name}")
+
 # ======================================================================
 # TREINO SAC
 # ======================================================================
@@ -591,26 +640,29 @@ def avaliar(algo_cls, algo_tag, features, macro, prices, reward, step, split):
     model = algo_cls.load(os.path.join(ckpt_dir, "final_model"))
 
     obs = eval_env.reset()
-    eval_env.envs[0].action_history = []
 
     # curva DIARIA: expande os daily_returns de cada periodo de decisao
+    # weights_history: coletado do info (robusto ao auto-reset do VecEnv no step terminal)
     portfolio_values = [1.0]
+    weights_history = []
     done = False
     while not done:
         action, _ = model.predict(obs, deterministic=True)
         obs, _, dones, infos = eval_env.step(action)
         done = bool(dones[0])
+        weights_history.append(infos[0]["weights"])
         for r in infos[0].get("daily_returns", []):
             portfolio_values.append(portfolio_values[-1] * (1 + r))
 
-    weights_df = pd.DataFrame(eval_env.envs[0].action_history)
+    tickers = eval_env.envs[0].tickers
+    weights_df = pd.DataFrame(weights_history, columns=tickers)
     weights_df.to_csv(os.path.join(DATA_DIR, f"{algo_tag}_weights_{out_name}.csv"), index=False)
 
     metrics = compute_metrics(portfolio_values)
     with open(os.path.join(METRICS_DIR, f"metrics_{out_name}.json"), "w") as f:
         json.dump(metrics, f, indent=2)
 
-    operations_metrics = compute_operations_metrics(weights_df)
+    operations_metrics = compute_operations_metrics(weights_df,0.0001,step)
     with open(os.path.join(METRICS_DIR, f"metrics_{out_name}_operations.json"), "w") as f:
         json.dump(operations_metrics, f, indent=2)
 
@@ -629,6 +681,8 @@ def avaliar(algo_cls, algo_tag, features, macro, prices, reward, step, split):
     return pd.Series(portfolio_values), weights_df
 
 
+
+
 # ======================================================================
 # MAIN
 # ======================================================================
@@ -640,15 +694,15 @@ if __name__ == "__main__":
     #train_sac()
     #train_ppo()
 
-    for r, s in combos:
-        avaliar(SAC, "SAC", df_features_val, df_macro_val, df_prices_val, r, s, split="val")
-        avaliar(PPO, "PPO", df_features_val, df_macro_val, df_prices_val, r, s, split="val")
+    #for r, s in combos:
+    #    avaliar(SAC, "SAC", df_features_val, df_macro_val, df_prices_val, r, s, split="val")
+    #   avaliar(PPO, "PPO", df_features_val, df_macro_val, df_prices_val, r, s, split="val")
 
     # TESTE (so depois de escolher a melhor config na validacao):
     # for r, s in combos:
     #     avaliar(SAC, "SAC", df_features_test, df_macro_test, df_prices_test, r, s, split="test")
     #     avaliar(PPO, "PPO", df_features_test, df_macro_test, df_prices_test, r, s, split="test")
-
+    train_ddpg()
 
 
 
