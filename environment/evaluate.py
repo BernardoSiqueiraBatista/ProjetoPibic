@@ -81,8 +81,8 @@ def count_operations(weights_prev, weights_curr, threshold=1e-4):
     return operations
 
 
-def compute_operations_metrics(weights_df, threshold=1e-4):
-    diffs = weights_df.diff().iloc[1:]
+def compute_operations_metrics(weights_df, threshold=1e-4,step=1):
+    diffs = weights_df.diff().iloc[step:]
     buys = (diffs > threshold).sum(axis=1)
     sells = (diffs < -threshold).sum(axis=1)
     ops_per_day = buys + sells
@@ -152,11 +152,11 @@ def evaluate_model(model_path, df_features, df_prices, df_macro, SEED,reward_typ
     env.norm_reward = False
 
     obs = env.reset()
-    env.envs[0].action_history  = []
 
     model = DDPG.load(model_path)
 
     portfolio_values = [1.0]
+    weights_history = []
 
     done = False
 
@@ -169,12 +169,14 @@ def evaluate_model(model_path, df_features, df_prices, df_macro, SEED,reward_typ
         done = dones[0]
         info = infos[0]
 
+        weights_history.append(info["weights"])
+
         portfolio_return = info.get("portfolio_return", 0)
 
         portfolio_values.append(
             portfolio_values[-1] * (1 + portfolio_return)
         )
-    weights_df = pd.DataFrame(env.envs[0].action_history)
+    weights_df = pd.DataFrame(weights_history, columns=env.envs[0].tickers)
     weights_df.to_csv(os.path.join(base_path, "..", "data", "ddpg_weights_val.csv"), index=False)
     print(weights_df.describe())
     print("\nConcentração média (max weight por dia):")
@@ -195,11 +197,11 @@ def evaluate_model_sac(model_path, df_features, df_prices, df_macro, SEED):
 
     env.norm_reward = False
     obs = env.reset()
-    env.envs[0].action_history = []
 
     model = SAC.load(model_path)
 
     portfolio_values = [1.0]
+    weights_history = []
 
     done = False
     step_count = 0
@@ -211,13 +213,14 @@ def evaluate_model_sac(model_path, df_features, df_prices, df_macro, SEED):
         done = dones[0]
         info = infos[0]
 
+        weights_history.append(info["weights"])
 
         portfolio_return = info.get("portfolio_return", 0)
 
         portfolio_values.append(
             portfolio_values[-1] * (1 + portfolio_return)
         )
-    weights_df = pd.DataFrame(env.envs[0].action_history)
+    weights_df = pd.DataFrame(weights_history, columns=env.envs[0].tickers)
     weights_df.to_csv(os.path.join(base_path, "..", "data", "sac_weights_val.csv"), index=False)
     return pd.Series(portfolio_values), weights_df
 
@@ -235,11 +238,11 @@ def evaluate_model_ppo(model_path, df_features, df_prices, df_macro, SEED=42):
 
     env.norm_reward = False
     obs = env.reset()
-    env.envs[0].action_history = []
 
     model = PPO.load(model_path)
 
     portfolio_values = [1.0]
+    weights_history = []
 
     done = False
     step_count = 0
@@ -251,12 +254,14 @@ def evaluate_model_ppo(model_path, df_features, df_prices, df_macro, SEED=42):
         done = dones[0]
         info = infos[0]
 
+        weights_history.append(info["weights"])
+
         portfolio_return = info.get("portfolio_return", 0)
 
         portfolio_values.append(
             portfolio_values[-1] * (1 + portfolio_return)
         )
-    weights_df = pd.DataFrame(env.envs[0].action_history)
+    weights_df = pd.DataFrame(weights_history, columns=env.envs[0].tickers)
     weights_df.to_csv(os.path.join(base_path, "..", "data", "ppo_weights_val.csv"), index=False)
     return pd.Series(portfolio_values), weights_df
 

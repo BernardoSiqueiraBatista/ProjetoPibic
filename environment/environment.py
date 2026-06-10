@@ -217,6 +217,7 @@ class PortfolioEnv(gym.Env):
         info = {
             "portfolio_return": portfolio_return,   # composto do período
             "daily_returns": daily_returns_period,  # lista dia a dia -> curva diária ao longo dos anos
+            "weights": new_weights.copy(),          # pesos do período (robusto ao auto-reset do VecEnv)
         }
         return obs, reward, terminated, truncated, info
 
@@ -239,8 +240,6 @@ class PortfolioEnv(gym.Env):
         self.weights = np.ones(self.n_assets) / self.n_assets
         self.portfolio_returns_history = []
         self.action_history = []
-
-        print(f"action histoyi is {len(self.action_history)}")
 
         obs = self._get_observation()
         return obs, {}
