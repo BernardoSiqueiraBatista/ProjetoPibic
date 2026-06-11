@@ -400,8 +400,15 @@ import numpy as np
 import itertools
 import json
 import os
+import argparse
 
 import matplotlib.pyplot as plt
+DDPG_COMBOS = list(itertools.product(
+    [1e-4, 3e-4],                                                    # learning_rate
+    [0.95, 0.98, 0.99],                                             # gamma
+    ["log-retorno", "huang-return", "sortino", "omega", "calmar"],  # reward
+    [21, 63],                                                       # step (1 já treinado)
+))
 
 policy_kwargs_ppo = dict(
     activation_fn=th.nn.ReLU,
@@ -681,28 +688,60 @@ def avaliar(algo_cls, algo_tag, features, macro, prices, reward, step, split):
     return pd.Series(portfolio_values), weights_df
 
 
+def train_ddpg_one(config_id):
+    """Treina UMA combinação do grid, escolhida por config_id (0..59)."""
+    if not (0 <= config_id < len(DDPG_COMBOS)):
+        raise ValueError(f"config_id {config_id} fora do range 0..{len(DDPG_COMBOS)-1}")
+
+    l, g, r, s = DDPG_COMBOS[config_id]
+    run_name = f"DDPG_r{r}_s{s}_lr{l}_g{g}"
+    print(f"[config_id={config_id}] treino {run_name}", flush=True)
+
+    iniciar_semente(SEED)
+
+    train_env = make_vec_env(df_features, df_macro, df_prices, r, s, eval_mode=False)
+    train_env = VecNormalize(train_env, norm_obs=False, norm_reward=True)
+
+    n_actions = len(df_prices.columns)
+    action_noise = NormalActionNoise(
+        mean=np.zeros(n_actions),
+        sigma=0.1 * np.ones(n_actions),
+    )
+
+    model = DDPG(
+        "MlpPolicy", train_env, seed=SEED,
+        action_noise=action_noise,
+        learning_rate=l, gamma=g,
+        batch_size=256, buffer_size=100_000, tau=0.005,
+        train_freq=(1, "step"), gradient_steps=1,
+        verbose=0, device=DEVICE,
+        policy_kwargs=policy_kwargs_ddpg,
+        tensorboard_log=TB_DIR,
+    )
+
+    ckpt_dir, callbacks = build_callbacks(run_name, r, s)
+
+    model.learn(
+        total_timesteps=TIMESTEPS,
+        callback=callbacks,
+        tb_log_name=run_name,
+        progress_bar=False,   # array job: sem barra interativa, vai para o log
+    )
+
+    model.save(os.path.join(ckpt_dir, "final_model"))
+    train_env.save(os.path.join(ckpt_dir, "vec_normalize.pkl"))
+    print(f"[config_id={config_id}] salvo {run_name}", flush=True)
 
 
 # ======================================================================
 # MAIN
 # ======================================================================
 if __name__ == "__main__":
-    reward_type = ["huang-return", "omega", "log-retorno", "sortino", "calmar"]
-    step_size   = [1, 21, 63]
-    combos = list(itertools.product(reward_type, step_size))
-
-    #train_sac()
-    #train_ppo()
-
-    #for r, s in combos:
-    #    avaliar(SAC, "SAC", df_features_val, df_macro_val, df_prices_val, r, s, split="val")
-    #   avaliar(PPO, "PPO", df_features_val, df_macro_val, df_prices_val, r, s, split="val")
-
-    # TESTE (so depois de escolher a melhor config na validacao):
-    # for r, s in combos:
-    #     avaliar(SAC, "SAC", df_features_test, df_macro_test, df_prices_test, r, s, split="test")
-    #     avaliar(PPO, "PPO", df_features_test, df_macro_test, df_prices_test, r, s, split="test")
-    train_ddpg()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config_id", type=int, required=True,
+                        help="índice da combinação do grid (0 a 59)")
+    args = parser.parse_args()
+    train_ddpg_one(args.config_id)
 
 
 

@@ -1,0 +1,2 @@
+usage: script_final.py [-h] --config_id CONFIG_ID
+script_final.py: error: the following arguments are required: --config_id
