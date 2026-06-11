@@ -1,0 +1,14 @@
+oi
+Ativos com NaN:
+set()
+Total NaN: 0
+Removendo ativos: []
+Ativos com NaN:
+set()
+Total NaN: 0
+Removendo ativos: []
+Ativos com NaN:
+set()
+Total NaN: 0
+Removendo ativos: []
+[config_id=30] treino DDPG_rlog-retorno_s21_lr0.0003_g0.95

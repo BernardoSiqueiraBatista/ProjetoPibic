@@ -1,0 +1,14 @@
+oi
+Ativos com NaN:
+set()
+Total NaN: 0
+Removendo ativos: []
+Ativos com NaN:
+set()
+Total NaN: 0
+Removendo ativos: []
+Ativos com NaN:
+set()
+Total NaN: 0
+Removendo ativos: []
+[config_id=14] treino DDPG_rsortino_s21_lr0.0001_g0.98

@@ -1,0 +1,1 @@
+slurmstepd: error: *** JOB 3320 ON cluster-node7 CANCELLED AT 2026-06-11T03:50:12 DUE TO TIME LIMIT ***

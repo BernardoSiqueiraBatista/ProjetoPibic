@@ -1,0 +1,13 @@
+oi
+Ativos com NaN:
+set()
+Total NaN: 0
+Removendo ativos: []
+Ativos com NaN:
+set()
+Total NaN: 0
+Removendo ativos: []
+Ativos com NaN:
+set()
+Total NaN: 0
+Removendo ativos: []

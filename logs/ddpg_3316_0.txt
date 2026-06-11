@@ -1,0 +1,16 @@
+oi
+Ativos com NaN:
+set()
+Total NaN: 0
+Removendo ativos: []
+Ativos com NaN:
+set()
+Total NaN: 0
+Removendo ativos: []
+Ativos com NaN:
+set()
+Total NaN: 0
+Removendo ativos: []
+[config_id=0] treino DDPG_rlog-retorno_s21_lr0.0001_g0.95
+Convergência salva em: /home/CIN/bsb/ProjetoPibic-1/environment/../plots/reward_convergence_DDPG_rlog-retorno_s21_lr0.0001_g0.95_s42.png
+[config_id=0] salvo DDPG_rlog-retorno_s21_lr0.0001_g0.95
