@@ -30,6 +30,10 @@ entra no pool de selecao. O fluxo (igual em espirito ao paper):
 Seeds incrementais via WF_SEEDS (ver abaixo). Selecao do estagio 1 -> testa
 poucos modelos sem contexto -> ablacao limpa e barata.
 
+Horizonte de rebalanceamento via WF_STEP: 1 (diario, default), 21 (~mensal),
+63 (~trimestral). step!=1 grava em diretorios ..._step{N} separados, sem colidir
+com o pipeline step=1. Ex.: bash submit_walkforward.sh 30 21
+
 IMPORTANTE: todos os envs usam VecNormalize(norm_obs=True). norm_obs=False
 degenera as politicas (macro 'ibov' satura a rede). Ver ddpg-norm-obs-degenerado.
 """
@@ -76,14 +80,19 @@ DEVICE    = os.environ.get("WF_DEVICE", "auto")   # DDPG/SAC: auto (GPU) | PPO s
 STAGE     = os.environ.get("WF_STAGE", "1")       # "1" = treina com contexto | "2" = ablacao sem contexto
 
 SELECTION_METRIC = "Sharpe Ratio"   # criterio do "melhor no treino"
-STEP_SIZE = 1
+# Horizonte de rebalanceamento via env var WF_STEP: 1 (diario), 21 (~mensal), 63 (~trimestral).
+# step=1 mantem os caminhos antigos; step!=1 namespaceia tudo (ex.: walkforward_step21)
+# para NAO colidir/sobrescrever o pipeline step=1 ja em execucao.
+STEP_SIZE = int(os.environ.get("WF_STEP", 1))
 WARMUP = 30   # pregoes do ano anterior anexados ao teste (contexto/retornos recentes)
 
+_NS = "walkforward" if STEP_SIZE == 1 else f"walkforward_step{STEP_SIZE}"
+
 base_path   = os.path.dirname(os.path.abspath(__file__))
-MODELS_DIR  = os.path.join(base_path, "models", "walkforward")
-PLOTS_DIR   = os.path.join(base_path, "..", "plots", "walkforward")
-METRICS_DIR = os.path.join(base_path, "..", "metrics", "walkforward")
-TB_DIR      = os.path.join(base_path, "..", "tensorboard", "walkforward")
+MODELS_DIR  = os.path.join(base_path, "models", _NS)
+PLOTS_DIR   = os.path.join(base_path, "..", "plots", _NS)
+METRICS_DIR = os.path.join(base_path, "..", "metrics", _NS)
+TB_DIR      = os.path.join(base_path, "..", "tensorboard", _NS)
 for d in (MODELS_DIR, PLOTS_DIR, METRICS_DIR, TB_DIR):
     os.makedirs(d, exist_ok=True)
 WINNERS_PATH = os.path.join(METRICS_DIR, "winners.json")
