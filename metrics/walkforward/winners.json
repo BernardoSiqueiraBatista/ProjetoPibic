@@ -1,0 +1,74 @@
+{
+  "2007": {
+    "algo": "DDPG",
+    "reward": "omega"
+  },
+  "2008": {
+    "algo": "SAC",
+    "reward": "omega"
+  },
+  "2009": {
+    "algo": "SAC",
+    "reward": "huang-return"
+  },
+  "2010": {
+    "algo": "SAC",
+    "reward": "omega"
+  },
+  "2011": {
+    "algo": "SAC",
+    "reward": "omega"
+  },
+  "2012": {
+    "algo": "PPO",
+    "reward": "calmar"
+  },
+  "2013": {
+    "algo": "DDPG",
+    "reward": "huang-return"
+  },
+  "2014": {
+    "algo": "DDPG",
+    "reward": "sortino"
+  },
+  "2015": {
+    "algo": "DDPG",
+    "reward": "log-retorno"
+  },
+  "2016": {
+    "algo": "SAC",
+    "reward": "huang-return"
+  },
+  "2017": {
+    "algo": "SAC",
+    "reward": "calmar"
+  },
+  "2018": {
+    "algo": "PPO",
+    "reward": "huang-return"
+  },
+  "2019": {
+    "algo": "PPO",
+    "reward": "huang-return"
+  },
+  "2020": {
+    "algo": "DDPG",
+    "reward": "omega"
+  },
+  "2021": {
+    "algo": "DDPG",
+    "reward": "log-retorno"
+  },
+  "2022": {
+    "algo": "SAC",
+    "reward": "sortino"
+  },
+  "2023": {
+    "algo": "PPO",
+    "reward": "calmar"
+  },
+  "2024": {
+    "algo": "PPO",
+    "reward": "calmar"
+  }
+}
