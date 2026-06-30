@@ -4,6 +4,27 @@ from gymnasium import spaces
 import pandas as pd
 
 
+
+def compute_sharpe():
+    print("oi")
+def compute_sortino():
+    print("oi")
+
+def compute_calmar():
+    print("oi")
+def compute_omega():
+    print("oi ")
+def compute_huang():
+    print("oi")
+
+REWARD_FUNCTIONS = {
+    "log-retorno": compute_sharpe,
+    "sortino": compute_sortino,
+    "calmar": compute_calmar,
+    "omega" : compute_omega,
+    "huang-return" : compute_huang
+}
+
 class PortfolioEnv(gym.Env):
 
     metadata = {"render_modes": []}
@@ -98,6 +119,14 @@ class PortfolioEnv(gym.Env):
         old_prices = self.prices.iloc[idx].values
         rt = (current_prices / (old_prices + 1e-8)) - 1
         return rt
+
+    REWARD_FUNCTIONS = {
+    "log-retorno": compute_sharpe,
+    "sortino": compute_sortino,
+    "calmar": compute_calmar,
+    "omega" : compute_omega,
+    "huang-return" : compute_huang
+    }
 
     # ---- recompensa ----
     def _compute_reward(self, ret, new_weights):
