@@ -11,7 +11,7 @@ algoritmo, pegamos o seu melhor resultado NO TESTE:
 TESTE (media das seeds presentes). Reusa os modelos COM contexto ja treinados no
 estagio 1 -- rode depois que o estagio 1 terminar.
 
-    WF_SEEDS=30 python -m environment.walf_forward_compare
+    WF_SEEDS=30 python -m environment.walk_forward_compare
 
 Saidas (nomes proprios, nao colidem com --mode avaliar):
     metrics/walkforward/walkforward_comparacao_algos.csv   (TODOS os testados + benchmarks)
@@ -22,7 +22,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from environment.walf_forward_validation import (
+from environment.walk_forward_validation import (
     _load_full_timeline, slice_train, slice_test, _eval_over_seeds,
     ALGOS_LIST, REWARD_TYPES, TEST_YEARS, _row, model_label,
     PLOTS_DIR, METRICS_DIR,

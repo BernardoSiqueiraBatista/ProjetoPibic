@@ -12,7 +12,7 @@ export WF_N_ENVS=${WF_N_ENVS:-8}
 export WF_TIMESTEPS=${WF_TIMESTEPS:-300000}
 
 if [ -n "$WF_MODE" ]; then
-    python -m environment.walf_forward_validation --mode "$WF_MODE"
+    python -m environment.walk_forward_validation --mode "$WF_MODE"
 else
-    python -m environment.walf_forward_validation --config_id "$SLURM_ARRAY_TASK_ID"
+    python -m environment.walk_forward_validation --config_id "$SLURM_ARRAY_TASK_ID"
 fi

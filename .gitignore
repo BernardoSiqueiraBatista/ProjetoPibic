@@ -5,3 +5,11 @@ checkpoints/
 
 
 
+# experimento evolutivo: agentes salvos e caches pesados
+results/evolutionary/models/
+results/evolutionary/tensorboard/
+
+# Python / macOS artifacts
+__pycache__/
+*.pyc
+.DS_Store
